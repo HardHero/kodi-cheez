@@ -1,0 +1,43 @@
+# file: site.yml
+---
+- hosts: kodi
+  become: true
+  become_user: root
+  vars_files:
+    - host_vars/samba_credentials.yml
+    - host_vars/main.yml
+  vars:
+    username: "{{local_service_user}}"
+    cifs_mounts:
+      - name: my_mount
+        mount_point: /mnt/piratecove
+        share_uri: //samba-cheez/piratecove
+        # local user and groups to hold ownership on mounted share
+        local_user: "{{local_service_user}}"
+        local_group: "{{local_service_group}}"
+        # cifs authentication informations
+        cifs_domain: \
+        cifs_username: "{{samba_user}}"
+        cifs_password: "{{samba_password}}"
+  pre_tasks:
+    - name: install pip
+      apt: name=python-pip
+    - name: create deluge group
+      group:
+        name: "{{local_service_group}}"
+        state: present
+    - name: create deluge username
+      user:
+        name: "{{local_service_user}}"
+        uid: 1040
+        group: "{{local_service_group}}"
+        home: /home/{{local_service_user}}
+        shell: /bin/bash
+        system: yes
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: ~/.ssh/{{local_service_user}}_key
+  roles:
+    #- { role: roles/smbclient-cheez, folder_group: 'deluge',  folder_owner: 'deluge' }
+    - {role: cifs-client, tags: ['cifs']}
+    - {role: 'roles/louwandre90.kodiUbuntu'}
